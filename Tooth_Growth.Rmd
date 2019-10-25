@@ -1,0 +1,96 @@
+---
+title: "Analysis of Tooth Growth by Dosage and Supplement"
+author: "Phillip Rowe"
+date: "9/12/2019"
+output: 
+  word_document: 
+    fig_caption: yes
+---
+
+```{r setup, include=FALSE}
+```
+# Basic Inferential Data Analysis
+
+**Assumptions** 
+
+There were 60 different guinea pigs in the experimental data, so each dosage-supplement-length datapoint should be considered independent (i.e., unpaired).  We use the t-test for our hypothesis tests, due to the relatively low number of samples per group (10).  We assume that the sample mean length for tooth growth estimates the population mean of any guinea pig that would receive a simlar dosage.  Variances are considered not equal for the t-tests.
+
+**Conclusions**
+
+1. **Ha: oj1 mean growth is more than 6 greater than oj_05 mean growth.**  The 95% confidence interval is 6.21 to Infinity, so we reject the null hypothesis that the difference is less than 6.  This difference represents a 6/13.23 = a 45% increase in growth due to the greater dosage.
+
+2. **Ha: oj2 mean growth is greater than oj1 mean growth.**  That said, the confidence interval is about +0.75, which is only about 3% increase over the mean growth of 22.7 for oj1 dosage. 
+3. **Ha: vc1 mean growth is greater than vc_05 mean growth.**  The 95% confidence interval is 6.75 to Infinity, so we reject the null hypothesis that the difference is less than 6.  This difference represents roughly a 6/7.98 = a 75% increase in growth due to the greater dosage.
+
+4. **Ha: vc2 mean growth is greater than vc1 mean growth.**  The difference is greater than 6, so we can again estimate that it is related to a 6/16.77~36% increase in growth.
+
+5. **Ha: oj_05 mean growth is greater than vc_05 mean growth.**  The difference at the 95% confidence level is only 1.7, however, and without a zero dosage control group for both supplements, it is not possible to make any conclusions for treatment based on this hypothesis test.
+
+6. **Ha: oj1 mean growth is greater than vc1 mean growth.**  The difference at the 95% confidence level is only 2.8, however, and the increase in growth vc1/vc_05 was greater at 75% vs. 45% for oj1/oj_05.  Thus, it appears that vc is a more effective supplement to induce growth.
+
+7. **H0: oj2 mean growth is the same as vc2 mean growth.**  The confidence interval contains 0; thus, we fail to reject the null hypothesis.
+
+### Loading data and basic summary 
+
+We use boxplots in Figure 1 to summarize the experimental data.  We observe that it appears the doubling of orange juice dosage (OJ) from 0.5 to 1.0 had a significant impact on tooth growth, but the increase of dosage from 1 to 2 seems to have a smaller impact. Contrastingly, the increase in dosage of ascorbic acid (VC) seems to have had a big impact on growth for both the 1  and 2 dosages.  The mininum, maximum, mean, and standard error of each experiment is shown in the code block below. The dosages are 0.5, 1, and 2 mg/day.
+
+### Hypothesis testing 
+
+We used 4 t-tests to find the significance levels of differences in mean tooth length between successive dosages (see comments in code).  
+
+We also observe that the lower doses of OJ seem to spur more growth than VC, but at the highest dose, the growth appears similar.  We performed three t-tests to compare means of the same dosage, different supplement. 
+
+```{r  echo=TRUE,warning=FALSE,message=FALSE}
+library("dplyr"); library("plyr"); library('reshape2')
+teeth<-group_by(ToothGrowth,dose,supp)
+
+par(mfrow=c(1,1))
+#png(file='teeth.png',width=480,height=480)
+boxplot(len~dose+supp,teeth,main="Tooth Growth by Dose-Supplement",
+   xlab="Dose-Supplement", ylab="Length")
+dev.off()
+
+teeth<-melt(data=ToothGrowth,id.vars=c("dose","supp"))
+casted<-ddply(teeth, .(supp,dose), summarize, min=min(value), max=max(value), 
+              mean=mean(value), std_error=round(sd(value)/sqrt(10),2))
+casted
+
+oj_05<-subset(ToothGrowth,dose==0.5&supp=='OJ')$len
+oj1<-subset(ToothGrowth,dose==1&supp=='OJ')$len
+oj2<-subset(ToothGrowth,dose==2&supp=='OJ')$len
+n<-10
+vc_05<-subset(ToothGrowth,dose==0.5&supp=='VC')$len
+vc1<-subset(ToothGrowth,dose==1&supp=='VC')$len
+vc2<-subset(ToothGrowth,dose==2&supp=='VC')$len
+
+#------------ ------------ ------------ ------------ ------------ ------------ 
+# Hypothesis 0: mean tooth growth mu of dosage1 = mean growth of dosage 2
+# Hypothesis A: len under dosage 2 is greater 
+
+#   ----------- 0.5 OJ vs 1 OJ  -----------
+t.test(oj1,oj_05,alternative = 'greater',paired=FALSE)
+
+#  ----------- 1.0 OJ  vs 2 OJ  -----------
+t.test(oj2,oj1,alternative = 'greater',paired=FALSE)
+
+#  ----------- 0.5 VC  vs 1 VC   -----------
+t.test(vc1,vc_05,alternative = 'greater',paired=FALSE)
+
+#  ----------- 1.0 VC vs 2 VC    -----------
+t.test(vc2,vc1,alternative = 'greater',paired=FALSE)
+
+#------------ ------------ ------------ ------------ ------------ ------------ 
+# Hypothesis 0: mean tooth growth of OC = mean growth of VC 
+# Hypothesis A: mean tooth growth is not equal under same dosage, different supplement  
+#   ----------- 0.5 OJ vs. 0.5 VC   -----------
+t.test(oj_05,vc_05,alternative = 'two.sided',paired=FALSE)
+
+#  ----------- 1 OJ vs. 1 VC  ----------- 
+t.test(oj1,vc1,alternative = 'two.sided',paired=FALSE)
+
+#   ----------- 2 OJ vs. 2 VC  ----------- 
+t.test(oj2,vc2,alternative = 'two.sided',paired=FALSE)
+
+
+```
+
